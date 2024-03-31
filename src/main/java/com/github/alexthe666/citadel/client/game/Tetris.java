@@ -1,5 +1,6 @@
 package com.github.alexthe666.citadel.client.game;
 
+import com.github.alexthe666.citadel.Citadel;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.vertex.*;
@@ -201,19 +202,57 @@ public class Tetris {
     }
 
     private void generateNextTetromino() {
-        BlockState randomState = Blocks.DIRT.defaultBlockState();
-        for (int tries = 0; tries < 5; tries++) {
-            if (allRegisteredBlocks.length > 1) {
-                BlockState block = allRegisteredBlocks[random.nextInt(allRegisteredBlocks.length - 1)].defaultBlockState();
-                BakedModel blockModel = Minecraft.getInstance().getBlockRenderer().getBlockModel(block);
-                if (!block.is(Blocks.GLOWSTONE) && !blockModel.isCustomRenderer() && blockModel.getRenderTypes(block, random, ModelData.EMPTY).contains(RenderType.solid())) {
-                    randomState = block;
-                    break;
+        try {
+            BlockState randomState = Blocks.DIRT.defaultBlockState();
+            for (int tries = 0; tries < 5; tries++) {
+                if (allRegisteredBlocks.length > 1) {
+                    BlockState block = allRegisteredBlocks[random.nextInt(allRegisteredBlocks.length - 1)].defaultBlockState();
+                    BakedModel blockModel = Minecraft.getInstance().getBlockRenderer().getBlockModel(block);
+                    if (
+                        !block.is(Blocks.GLOWSTONE) &&
+                            !blockModel.isCustomRenderer() &&
+                            // NOTE: Unreported exception thrown!
+                            // java.lang.NullPointerException: Cannot invoke "net.minecraft.client.resources.model.BakedModel.m_7521_()" because "this.originalModel" is null
+                            //	at TRANSFORMER/forge@43.3.5/net.minecraftforge.client.model.BakedModelWrapper.m_7521_(BakedModelWrapper.java:81)
+                            //	at TRANSFORMER/citadel@2.1.4/com.github.alexthe666.citadel.client.game.Tetris.generateNextTetromino(Tetris.java:211)
+                            //	at TRANSFORMER/citadel@2.1.4/com.github.alexthe666.citadel.client.game.Tetris.reset(Tetris.java:340)
+                            //	at TRANSFORMER/citadel@2.1.4/com.github.alexthe666.citadel.ClientProxy.clientTick(ClientProxy.java:200)
+                            //	at TRANSFORMER/citadel@2.1.4/com.github.alexthe666.citadel.__ClientProxy_clientTick_ClientTickEvent.invoke(.dynamic)
+                            //	at MC-BOOTSTRAP/net.minecraftforge.eventbus/net.minecraftforge.eventbus.ASMEventHandler.invoke(ASMEventHandler.java:73)
+                            //	at MC-BOOTSTRAP/net.minecraftforge.eventbus/net.minecraftforge.eventbus.EventBus.post(EventBus.java:315)
+                            //	at MC-BOOTSTRAP/net.minecraftforge.eventbus/net.minecraftforge.eventbus.EventBus.post(EventBus.java:296)
+                            //	at TRANSFORMER/forge@43.3.5/net.minecraftforge.event.ForgeEventFactory.onPreClientTick(ForgeEventFactory.java:834)
+                            //	at TRANSFORMER/minecraft@1.19.2/net.minecraft.client.Minecraft.m_91398_(Minecraft.java:1718)
+                            //	at TRANSFORMER/minecraft@1.19.2/net.minecraft.client.Minecraft.m_91383_(Minecraft.java:1078)
+                            //	at TRANSFORMER/minecraft@1.19.2/net.minecraft.client.Minecraft.m_91374_(Minecraft.java:700)
+                            //	at TRANSFORMER/minecraft@1.19.2/net.minecraft.client.main.Main.m_239872_(Main.java:212)
+                            //	at TRANSFORMER/minecraft@1.19.2/net.minecraft.client.main.Main.main(Main.java:51)
+                            //	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke0(Native Method)
+                            //	at java.base/jdk.internal.reflect.NativeMethodAccessorImpl.invoke(NativeMethodAccessorImpl.java:77)
+                            //	at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(DelegatingMethodAccessorImpl.java:43)
+                            //	at java.base/java.lang.reflect.Method.invoke(Method.java:568)
+                            //	at MC-BOOTSTRAP/fmlloader@1.19.2-43.3.5/net.minecraftforge.fml.loading.targets.CommonClientLaunchHandler.lambda$launchService$0(CommonClientLaunchHandler.java:27)
+                            //	at MC-BOOTSTRAP/cpw.mods.modlauncher@10.0.8/cpw.mods.modlauncher.LaunchServiceHandlerDecorator.launch(LaunchServiceHandlerDecorator.java:30)
+                            //	at MC-BOOTSTRAP/cpw.mods.modlauncher@10.0.8/cpw.mods.modlauncher.LaunchServiceHandler.launch(LaunchServiceHandler.java:53)
+                            //	at MC-BOOTSTRAP/cpw.mods.modlauncher@10.0.8/cpw.mods.modlauncher.LaunchServiceHandler.launch(LaunchServiceHandler.java:71)
+                            //	at MC-BOOTSTRAP/cpw.mods.modlauncher@10.0.8/cpw.mods.modlauncher.Launcher.run(Launcher.java:106)
+                            //	at MC-BOOTSTRAP/cpw.mods.modlauncher@10.0.8/cpw.mods.modlauncher.Launcher.main(Launcher.java:77)
+                            //	at MC-BOOTSTRAP/cpw.mods.modlauncher@10.0.8/cpw.mods.modlauncher.BootstrapLaunchConsumer.accept(BootstrapLaunchConsumer.java:26)
+                            //	at MC-BOOTSTRAP/cpw.mods.modlauncher@10.0.8/cpw.mods.modlauncher.BootstrapLaunchConsumer.accept(BootstrapLaunchConsumer.java:23)
+                            //	at cpw.mods.bootstraplauncher@1.1.2/cpw.mods.bootstraplauncher.BootstrapLauncher.main(BootstrapLauncher.java:141)
+                            blockModel.getRenderTypes(block, random, ModelData.EMPTY).contains(RenderType.solid())
+                    ) {
+                        randomState = block;
+                        break;
+                    }
                 }
             }
+            nextShape = TetrominoShape.getRandom(random);
+            nextBlock = randomState;
+        } catch (Exception e) {
+            Citadel.LOGGER.error("Citadel couldn't generate tetromino. The game may be broken.");
+            e.printStackTrace();
         }
-        nextShape = TetrominoShape.getRandom(random);
-        nextBlock = randomState;
     }
 
     private void generateTetromino() {
